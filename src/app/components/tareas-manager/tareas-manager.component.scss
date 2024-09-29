@@ -1,0 +1,13 @@
+.task-item {
+    margin-bottom: 15px; /* Espaciado entre tareas */
+  }
+  
+  .task-header {
+    display: flex; /* Usar Flexbox para alinear los elementos */
+    align-items: center; /* Alinear verticalmente al centro */
+  }
+  
+  .task-header input {
+    margin-right: 10px; /* Espacio entre el checkbox y el título */
+  }
+  

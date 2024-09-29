@@ -1,0 +1,116 @@
+<div class="w-full max-w-lg p-6 bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700 mx-auto mt-8">
+  <form [formGroup]="taskForm" (ngSubmit)="submit()" class="space-y-4">
+    <h3 class="text-xl font-medium text-gray-900 dark:text-white">Crear Nueva Tarea</h3>
+    
+    <!-- Campo para el título de la tarea -->
+    <div>
+      <label for="title" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nombre de la Tarea:</label>
+      <input id="title" formControlName="title" 
+             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" 
+             required>
+      <div *ngIf="taskExists" class="text-sm text-red-500">
+        <small>La tarea ya existe. Por favor, ingresa un nombre diferente.</small>
+      </div>
+    </div>
+    
+    <!-- Campo para la fecha límite -->
+    <div>
+      <label for="dueDate" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Fecha límite:</label>
+      <input id="dueDate" type="date" formControlName="dueDate" 
+             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" 
+             required>
+    </div>
+
+    <h3 class="text-xl font-medium text-gray-900 dark:text-white">Personas Asociadas:</h3>
+    <div formArrayName="assignedPeople">
+      <div *ngFor="let person of assignedPeople.controls; let i = index" [formGroupName]="i" class="space-y-2">
+        
+        <!-- Campo para el nombre completo -->
+        <label for="fullName" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nombre Completo:</label>
+        <input id="fullName" formControlName="fullName" 
+               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" 
+               required>
+        <div *ngIf="person.get('fullName')?.invalid && person.get('fullName')?.touched" class="text-sm text-red-500">
+          <small>El nombre completo es obligatorio y debe tener al menos 5 caracteres.</small>
+        </div>
+
+        <!-- Campo para la edad -->
+        <label for="age" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Edad:</label>
+        <input id="age" type="number" formControlName="age" 
+               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" 
+               required>
+        <div *ngIf="person.get('age')?.invalid && person.get('age')?.touched" class="text-sm text-red-500">
+          <small>La edad es obligatoria y debe ser mayor de 18 años.</small>
+        </div>
+
+        <h4 class="text-md font-bold">Habilidades:</h4>
+        <div formArrayName="skills" class="space-y-2">
+          <div *ngFor="let skill of getSkills(i).controls; let j = index">
+            <label for="skill" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Habilidad:</label>
+            <input [formControlName]="j" 
+                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white" 
+                   required>
+            <button type="button" (click)="removeSkill(i, j)" class="text-red-500 hover:underline">Eliminar habilidad</button>
+          </div>
+          <button type="button" (click)="addSkill(i)" class="text-blue-500 hover:underline">Añadir habilidad</button>
+        </div>
+
+        <button type="button" (click)="removePerson(i)" class="text-red-500 hover:underline">Eliminar persona</button>
+        <hr class="my-4">
+      </div>
+    </div>
+
+    <button type="button" (click)="addPerson()" class="w-full text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">Añadir persona</button>
+    <button type="submit" class="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Guardar tarea</button>
+  </form>
+</div>
+
+<!-- El Filtro de Tareas -->
+<div *ngIf="isTaskSaved"> 
+  <h4 class="text-lg font-bold mt-6 text-blue-600">Lista de Tareas:</h4>
+
+  <br>
+  <h3 class="text-lg font-bold mt-6">Filtros:</h3>
+  <select [(ngModel)]="filterOption" (change)="filterTasks(filterOption)" 
+          class="mt-2 block w-full max-w-xs px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+    <option value="all">Todas</option>
+    <option value="completed">Completadas</option>
+    <option value="pending">Pendientes</option>
+  </select>
+
+  <!-- Mostrar las tareas filtradas en una tabla -->
+  <div class="relative overflow-x-auto mt-6">
+    <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+      <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+        <tr>
+          <th scope="col" class="px-6 py-3">Estatus</th>
+          <th scope="col" class="px-6 py-3">Título de la Tarea</th>
+          <th scope="col" class="px-6 py-3">Personas Asociadas</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let task of filteredTasks; let i = index" class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+          <!-- Columna Completada -->
+          <td class="px-6 py-4">
+            <input type="checkbox" [checked]="task.completed" (change)="toggleTaskCompletion(i)" class="h-4 w-4 text-indigo-600 border-gray-300 rounded">
+          </td>
+          <!-- Columna Título de la Tarea con Fecha Límite -->
+          <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+            {{ task.title }} <br>
+            <span class="text-xs text-gray-500"> {{ task.dueDate }}</span>
+          </td>
+          <!-- Columna Personas Asociadas -->
+          <td class="px-6 py-4">
+            <div *ngFor="let person of task.assignedPeople">
+              <p class="text-sm"> {{ person.fullName }} ({{ person.age }})</p>
+              <p class="text-sm">Habilidades: {{ person.skills.join(', ') }}</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Espacios en blanco para la separación visual -->
+<br><br><br><br><br>
